@@ -1,13 +1,13 @@
 package com.db.edu.chat.client;
 
+import com.db.edu.chat.server.Server;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
-
-import com.db.edu.chat.server.Server;
 
 public class Client {
 	public static void main(String... args) throws IOException {
@@ -33,9 +33,13 @@ public class Client {
 		}).start();
 		
 		while(true) {
-			socketWriter.write(consoleReader.readLine());
-			socketWriter.newLine();
-			socketWriter.flush();
+			pushMessageToServer(socketWriter, consoleReader);
 		}
+	}
+
+	private static void pushMessageToServer(BufferedWriter socketWriter, BufferedReader consoleReader) throws IOException {
+		socketWriter.write(consoleReader.readLine());
+		socketWriter.newLine();
+		socketWriter.flush();
 	}
 }

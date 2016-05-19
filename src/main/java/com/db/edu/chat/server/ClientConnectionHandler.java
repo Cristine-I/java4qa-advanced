@@ -42,7 +42,7 @@ public class ClientConnectionHandler implements Runnable {
 						if (outSocket == this.inSocket) continue;
 						logger.info("Writing message " + message + " to socket " + outSocket);
 
-						pushMessage(message, outSocket);
+						pushMessageToClient(message, outSocket);
 
 					} catch (IOException e) {
 						logger.error("Error writing message " + message + " to socket " + outSocket + ". Closing socket", e);
@@ -73,7 +73,7 @@ public class ClientConnectionHandler implements Runnable {
 		}
 	}
 
-	private void pushMessage(String message, Socket outSocket) throws IOException {
+	private void pushMessageToClient(String message, Socket outSocket) throws IOException {
 		BufferedWriter socketWriter = new BufferedWriter(new OutputStreamWriter(outSocket.getOutputStream()));
 		socketWriter.write(message);
 		socketWriter.newLine();
