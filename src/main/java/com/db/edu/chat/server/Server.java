@@ -1,13 +1,13 @@
 package com.db.edu.chat.server;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Collection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Server {
 	private static final Logger logger = LoggerFactory.getLogger(Server.class);
@@ -24,14 +24,9 @@ public class Server {
 		public void run() {
 			while(!isInterrupted()) {
 				try {
-					Socket clientSocket = serverSocket.accept();
-					logger.info("Client connected: " + clientSocket.getInetAddress() + ":" + clientSocket.getPort());
-
+					Socket clientSocket = waitForClientConnect();
 					clientsSockets.add(clientSocket);
-
-					Thread clientConnectionHandler = new Thread(new ClientConnectionHandler(clientSocket, clientsSockets));
-					clientConnectionHandler.setDaemon(true);
-					clientConnectionHandler.start();
+					startClientConnectionHandler(clientSocket);
 				} catch (SocketException e) {
 					logger.debug("Intentionally closed socket: time to stop");
 					break;
@@ -42,7 +37,19 @@ public class Server {
 			}
 		}
 	};
-	
+
+	private void startClientConnectionHandler(Socket clientSocket) throws IOException {
+		Thread clientConnectionHandler = new Thread(new ClientConnectionHandler(clientSocket, clientsSockets));
+		clientConnectionHandler.setDaemon(true);
+		clientConnectionHandler.start();
+	}
+
+	private Socket waitForClientConnect() throws IOException {
+		Socket clientSocket = serverSocket.accept();
+		logger.info("Client connected: " + clientSocket.getInetAddress() + ":" + clientSocket.getPort());
+		return clientSocket;
+	}
+
 	public void start() throws ServerError {
 		try {
 			serverSocket = new ServerSocket(PORT);

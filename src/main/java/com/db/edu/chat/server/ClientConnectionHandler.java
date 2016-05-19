@@ -1,5 +1,8 @@
 package com.db.edu.chat.server;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -7,10 +10,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.Collection;
-import java.util.Iterator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ClientConnectionHandler implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(ClientConnectionHandler.class);
@@ -27,8 +26,7 @@ public class ClientConnectionHandler implements Runnable {
 	public void run() {
 		while(true) {
 			try {
-				BufferedReader socketReader = new BufferedReader(new InputStreamReader(inSocket.getInputStream()));
-				String message = socketReader.readLine();
+				String message = messageWaiting();
 				if(message == null) break;
 
 				logger.info("Message from client "
@@ -44,10 +42,8 @@ public class ClientConnectionHandler implements Runnable {
 						if (outSocket == this.inSocket) continue;
 						logger.info("Writing message " + message + " to socket " + outSocket);
 
-						BufferedWriter socketWriter = new BufferedWriter(new OutputStreamWriter(outSocket.getOutputStream()));
-						socketWriter.write(message);
-						socketWriter.newLine();
-						socketWriter.flush();
+						pushMessage(message, outSocket);
+
 					} catch (IOException e) {
 						logger.error("Error writing message " + message + " to socket " + outSocket + ". Closing socket", e);
 						try {
@@ -75,5 +71,17 @@ public class ClientConnectionHandler implements Runnable {
 			}
 
 		}
+	}
+
+	private void pushMessage(String message, Socket outSocket) throws IOException {
+		BufferedWriter socketWriter = new BufferedWriter(new OutputStreamWriter(outSocket.getOutputStream()));
+		socketWriter.write(message);
+		socketWriter.newLine();
+		socketWriter.flush();
+	}
+
+	private String messageWaiting() throws IOException {
+		BufferedReader socketReader = new BufferedReader(new InputStreamReader(inSocket.getInputStream()));
+		return socketReader.readLine();
 	}
 }
