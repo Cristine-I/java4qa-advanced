@@ -3,76 +3,58 @@ package com.db.edu.chat.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.Collection;
 
-public class BusinessLogicHandler  {
+public class BusinessLogicHandler {
     private static final Logger logger = LoggerFactory.getLogger(ClientConnectionHandler.class);
 
     BusinessLogicHandler() {
     }
 
-    public static void handleMessage(Socket inSocket, Collection<Socket> clientsSockets)  {
+    public static void handleMessage(ClientTransport inTransport, Collection<ClientTransport> transports)  {
         while(true) {
             try {
-                String message = messageWaiting(inSocket);
-                if(message == null) break;
-
-                logger.info("Message from client "
-                        + inSocket.getInetAddress() + ":"
-                        + inSocket.getPort() + "> "
-                        + message);
-
-                populateMessageToAllClients(inSocket, clientsSockets, message);
+                String messagetext = inTransport.read();
+                if(messagetext == null) break;
+                logger.info("Message from: " + inTransport.getTransportInfo() + messagetext);
+                populateMessageToAllClients(inTransport, transports, messagetext);
 
             } catch (IOException e) {
-                logger.error("Network reading message from socket " + inSocket, e);
+                logger.error("Network reading message from transport " + inTransport, e);
                 try {
-                    inSocket.close();
+                    inTransport.close();
                 } catch (IOException innerE) {
-                    logger.debug("Error closing socket ", innerE);
+                    logger.debug("Error closing transport ", innerE);
                 }
 
                 logger.error("Removing socket and stop this handler thread");
-                clientsSockets.remove(inSocket);
+                transports.remove(inTransport);
                 return;
             }
         }
     }
 
-    private static void populateMessageToAllClients(Socket inSocket, Collection<Socket> clientsSockets, String message) {
-        for (Socket outSocket : clientsSockets) {
+    private static void populateMessageToAllClients(ClientTransport inTransport, Collection<ClientTransport> transports, String text) {
+        for (ClientTransport outTransport : transports) {
             try {
-                if (outSocket.isClosed()) continue;
-                if (!outSocket.isBound()) continue;
-                if (!outSocket.isConnected()) continue;
-                if (outSocket == inSocket) continue;
-                logger.info("Writing message " + message + " to socket " + outSocket);
-
-                pushMessageToClient(message, outSocket);
-
+                logger.info("Writing message " + text + " to transport " + outTransport);
+                outTransport.write(text);
             } catch (IOException e) {
-                logger.error("Error writing message " + message + " to socket " + outSocket + ". Closing socket", e);
+                logger.error("Error writing message " + text + " to transport " + outTransport + ". Closing transport", e);
                 try {
-                    outSocket.close();
+                    outTransport.close();
                 } catch (IOException innerE) {
-                    logger.error("Error closing socket ", innerE);
+                    logger.error("Error closing transport ", innerE);
                 }
 
-                logger.error("Removing connection " + outSocket);
-                clientsSockets.remove(outSocket);
+                logger.error("Removing transport " + outTransport);
+                transports.remove(outTransport);
             }
         }
-    }
-
-    public static String messageWaiting(Socket inSocket) throws IOException {
-        BufferedReader socketReader = new BufferedReader(new InputStreamReader(inSocket.getInputStream()));
-        return socketReader.readLine();
     }
 
     private static void pushMessageToClient(String message, Socket outSocket) throws IOException {

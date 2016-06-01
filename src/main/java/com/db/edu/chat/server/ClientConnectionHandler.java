@@ -9,16 +9,27 @@ import java.util.Collection;
 
 public class ClientConnectionHandler implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(ClientConnectionHandler.class);
-	
-	private final Socket inSocket;
-	private final Collection<Socket> clientsSockets;
 
-	public ClientConnectionHandler(Socket clientSocket, Collection<Socket> clientsSockets) throws IOException {
-		this.inSocket = clientSocket;
+	private final Socket inSocket;
+	private final ClientTransport inTransport;
+
+	private final Collection<Socket> clientsSockets;
+	private final Collection<ClientTransport> transports = null;
+
+	public ClientConnectionHandler(Socket inSocket, Collection<Socket> clientsSockets) throws IOException {
+		this.inSocket = inSocket;
 		this.clientsSockets = clientsSockets;
+
+		this.inTransport = new ClientTransport(this.inSocket);
+
+		for (Socket outSocket : this.clientsSockets) {
+			ClientTransport outTransport = new ClientTransport(outSocket);
+			transports.add(outTransport);
+		}
+
 	}
 
 	public void run() {
-		BusinessLogicHandler.handleMessage(inSocket, clientsSockets);
+		BusinessLogicHandler.handleMessage(inTransport, transports);
 	}
 }
