@@ -30,6 +30,7 @@ public class ClientConnectionHandler implements Runnable {
 	}
 
 	public void run() {
-		BusinessLogicHandler.handleMessage(inTransport, transports);
+		BusinessLogicHandler businessLogic = new BusinessLogicHandler(inTransport, transports);
+		businessLogic.handleMessage();
 	}
 }
